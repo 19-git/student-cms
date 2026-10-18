@@ -1,0 +1,16 @@
+# 排除 IDE 本地配置
+.idea/
+
+# 排除 Python 缓存
+__pycache__/
+*.py[cod]
+
+# 排除打包中间产物
+build/
+dist/
+*.spec
+
+# 环境与虚拟环境
+venv/
+.venv/
+env/
