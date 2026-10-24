@@ -5,6 +5,7 @@
 #导包
 import os
 import json
+from openpyxl import Workbook, load_workbook
 from student import Student
 
 class StudentCMS(object):
@@ -30,6 +31,8 @@ class StudentCMS(object):
         print('\t4.查询单个学生信息')
         print('\t5.查询所有学生信息')
         print('\t6.保存学生信息')
+        print('\t7.导出学生信息到Excel')
+        print('\t8.从Excel导入学生信息')
         print('\to.退出系统')
         print('*'*23)
 
@@ -118,6 +121,77 @@ class StudentCMS(object):
             #将列表套字典 转换成[学生对象,学生对象,学生对象,...]
             self.stu_list = [Student(**stu_dict) for stu_dict in stu_list]
 
+    def export_excel(self):
+        #没有数据就直接提示并返回
+        if len(self.stu_list) == 0:
+            print("当前没有学生数据可导出！")
+            return
+        #新建工作簿，取默认工作表
+        wb = Workbook()
+        ws = wb.active
+        #第一行写表头
+        ws.append(['姓名', '性别', '年龄', '电话', '描述'])
+        #每个学生对象 append 成一行
+        for stu in self.stu_list:
+            ws.append([stu.name, stu.gender, stu.age, stu.phone, stu.desc])
+        #保存成文件
+        wb.save('students.xlsx')
+        print(f"已导出 {len(self.stu_list)} 条学生信息到 students.xlsx")
+
+    def import_excel(self):
+        #询问文件路径，检查文件存在
+        file_name = input("请输入要导入的 Excel 文件路径：").strip()
+        if not os.path.exists(file_name):
+            print(f"文件 {file_name} 不存在！")
+            return
+        #检查路径必须是 .xlsx 文件（而不是文件夹或别的类型）
+        if not os.path.isfile(file_name) or not file_name.lower().endswith('.xlsx'):
+            print("路径无效：请输入一个 .xlsx 文件的完整路径（含文件名和 .xlsx 后缀）")
+            return
+        #读取工作簿，取第一个工作表（打开失败时给出友好提示）
+        try:
+            wb = load_workbook(file_name)
+        except Exception as e:
+            print(f"无法打开该 Excel 文件（{e}），请确认文件未被占用且格式正确")
+            return
+        ws = wb.active
+        add_count = 0   #成功添加的行数
+        skip_count = 0  #被跳过的行数
+        #从第 2 行开始逐行读取（跳过表头），每行转成元组
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            #列数不足 5 列的行直接跳过
+            if len(row) < 5:
+                skip_count += 1
+                continue
+            name, gender, age, phone, desc = row
+            #姓名为空 → 跳过
+            name = str(name).strip() if name is not None else ""
+            if name == "":
+                skip_count += 1
+                continue
+            #与已有学生同名 → 跳过（复用去重规则）
+            if any(stu.name == name for stu in self.stu_list):
+                skip_count += 1
+                continue
+            #性别、年龄、电话逐项校验，不合规跳过
+            if gender not in ["男", "女"]:
+                skip_count += 1
+                continue
+            try:
+                age = int(age)
+            except (TypeError, ValueError):
+                skip_count += 1
+                continue
+            phone = str(phone).strip()
+            if not (phone.isdigit() and len(phone) == 11):
+                skip_count += 1
+                continue
+            desc = str(desc) if desc is not None else ""
+            #全部通过 → 封装成学生对象，加入列表
+            self.stu_list.append(Student(name, gender, age, phone, desc))
+            add_count += 1
+        print(f"导入完成：新增 {add_count} 条，跳过 {skip_count} 条（空行/重复/不合规）")
+
 
     #定义函数将该系统跑通
     def execute(self):
@@ -155,6 +229,12 @@ class StudentCMS(object):
                     # print("6.保存学生信息\n")
                     self.save_student()
                     print("保存成功~\n")
+                case '7':
+                    # print("7.导出学生信息到Excel\n")
+                    self.export_excel()
+                case '8':
+                    # print("8.从Excel导入学生信息\n")
+                    self.import_excel()
                 case '0':
                     result = input("您确定要退出吗？(Y/N):")
                     if result.lower() == 'y':
