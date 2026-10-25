@@ -132,11 +132,37 @@ class StudentCMS(object):
             break
 
     def search_all_student(self):
+        #没有学生时直接提示返回
         if len(self.stu_list) == 0:
             print("请先添加学生信息！\n")
-        else:
-            for stu in self.stu_list:
+            return
+
+        page_size = 10                                 # 每页显示 10 条
+        total = len(self.stu_list)                     # 数据总条数
+        pages = (total + page_size - 1) // page_size   # 总页数（向上取整）
+        page = 1                                       # 默认从第 1 页开始
+
+        while True:
+            # 计算本页要显示的切片范围
+            start = (page - 1) * page_size
+            end = start + page_size
+            print(f"--- 共 {total} 条，第 {page}/{pages} 页 ---")
+            # 切片：只打印本页的 10 条
+            for stu in self.stu_list[start:end]:
                 print(stu)
+
+            # 只有 1 页时无需翻页，直接结束
+            if pages <= 1:
+                break
+
+            # 翻页交互：输入页码跳转，q 返回菜单
+            cmd = input("输入页码翻页（q 返回菜单）：").strip()
+            if cmd.lower() == 'q':
+                break
+            if cmd.isdigit() and 1 <= int(cmd) <= pages:
+                page = int(cmd)
+            else:
+                print("页码无效，请重新输入！")
 
         print()
 
