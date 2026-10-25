@@ -12,6 +12,7 @@ class StudentCMS(object):
     def __init__(self):
         #创建学生列表，用于存放学生对象
         self.stu_list = []   #[学生对象，学生对象，学生对象，...] [Student(),Student(),Student(),...]
+        self.role = None     #当前登录角色：'admin' 管理员 / 'teacher' 普通老师
 
     #通用校验函数：提示输入→校验→不合格则重输，返回合格的值
     def input_check(self, tip, check_func, error_msg):
@@ -21,22 +22,52 @@ class StudentCMS(object):
                 return value
             print(error_msg)
 
+    #登录方法：选择角色（管理员需密码，普通老师直接进入）
+    def login(self):
+        print('*'*23)
+        print('学生管理系统V2.0版 - 登录')
+        print('\t1.管理员')
+        print('\t2.普通老师')
+        print('*'*23)
+        while True:
+            choice = input('请选择登录角色：')
+            if choice == '1':
+                password = input('请输入管理员密码：')
+                if password == '123456':
+                    self.role = 'admin'
+                    print('管理员登录成功~\n')
+                    break
+                print('密码错误，请重新输入！')
+            elif choice == '2':
+                self.role = 'teacher'
+                print('普通老师登录成功~\n')
+                break
+            else:
+                print('输入错误，请重新输入！')
+
     @staticmethod
-    def show_view():
+    def show_view(role):
         print('*'*23)
         print('学生管理系统V2.0版')
-        print('\t1.添加学生信息')
-        print('\t2.删除学生信息')
-        print('\t3.修改学生信息')
+        if role == 'admin':                        #管理员才显示增删改
+            print('\t1.添加学生信息')
+            print('\t2.删除学生信息')
+            print('\t3.修改学生信息')
         print('\t4.查询单个学生信息')
         print('\t5.查询所有学生信息')
-        print('\t6.保存学生信息')
-        print('\t7.导出学生信息到Excel')
-        print('\t8.从Excel导入学生信息')
+        if role == 'admin':                        #管理员才显示保存
+            print('\t6.保存学生信息')
+        print('\t7.导出学生信息到Excel')           #老师和管理员都能导出（查看的延伸）
+        if role == 'admin':                        #管理员才显示导入
+            print('\t8.从Excel导入学生信息')
         print('\to.退出系统')
         print('*'*23)
 
     def add_student(self):
+        #权限检查：普通老师不能修改数据
+        if self.role != 'admin':
+            print('权限不足：普通老师只能查看，不能修改数据！')
+            return
         name = self.input_check("输入学生姓名：", lambda s: s != "", "姓名不能为空，请重新输入！")
         # 去重检查：在录入其他信息之前，先遍历已有学生，防止重复添加同名
         for stu in self.stu_list:            # 逐个取出已有学生对象
@@ -54,6 +85,10 @@ class StudentCMS(object):
         print(f"已添加{name}学生信息~")
 
     def del_student(self):
+        #权限检查：普通老师不能修改数据
+        if self.role != 'admin':
+            print('权限不足：普通老师只能查看，不能修改数据！')
+            return
         while True:
             del_name = input("输入要删除的学生姓名：")
             for stu in self.stu_list:          #for...else,只有for循环没有被break打断,完整遍历结束时,才会执行else里的代码
@@ -68,6 +103,10 @@ class StudentCMS(object):
 
 
     def update_student(self):
+        #权限检查：普通老师不能修改数据
+        if self.role != 'admin':
+            print('权限不足：普通老师只能查看，不能修改数据！')
+            return
         while True:
             up_name = input("输入要修改的学生姓名：")
             for stu in self.stu_list:
@@ -102,12 +141,17 @@ class StudentCMS(object):
         print()
 
     def save_student(self):
+        #权限检查：普通老师不能写数据文件
+        if self.role != 'admin':
+            print('权限不足：普通老师只能查看，不能保存数据！')
+            return
         #关联 学生信息文件
         with open('./stu_data.txt','w',encoding='utf-8') as dest_f:
             #把[学生对象，学生对象...] 转为 [字典，字典...]
             stu_dict = [stu.__dict__ for stu in self.stu_list]
             #把字典列表 转成 JSON 字符串写入（ensure_ascii=False 让中文直接显示，indent=4 美化格式）
             dest_f.write(json.dumps(stu_dict, ensure_ascii=False, indent=4))
+        print("保存成功~")
 
     def load_student(self):
         with open('./stu_data.txt','r',encoding='utf-8') as src_f:
@@ -139,6 +183,10 @@ class StudentCMS(object):
         print(f"已导出 {len(self.stu_list)} 条学生信息到 students.xlsx")
 
     def import_excel(self):
+        #权限检查：普通老师不能批量导入（导入属于新增数据）
+        if self.role != 'admin':
+            print('权限不足：普通老师只能查看，不能导入数据！')
+            return
         #询问文件路径，检查文件存在
         file_name = input("请输入要导入的 Excel 文件路径：").strip()
         if not os.path.exists(file_name):
@@ -200,8 +248,10 @@ class StudentCMS(object):
             self.load_student()
         else:
             print("未保存过学生信息")
+        #登录：选择管理员或普通老师
+        self.login()
         while True:
-            StudentCMS.show_view()
+            StudentCMS.show_view(self.role)
 
             input_num = input('请输入要执行操作对应的编号:')
             match input_num:
@@ -228,7 +278,6 @@ class StudentCMS(object):
                 case '6':
                     # print("6.保存学生信息\n")
                     self.save_student()
-                    print("保存成功~\n")
                 case '7':
                     # print("7.导出学生信息到Excel\n")
                     self.export_excel()
@@ -238,8 +287,9 @@ class StudentCMS(object):
                 case '0':
                     result = input("您确定要退出吗？(Y/N):")
                     if result.lower() == 'y':
-                        #推出前自动保存学生信息到文件
-                        self.save_student()
+                        #退出前自动保存学生信息到文件（仅管理员；老师未改动数据无需保存）
+                        if self.role == 'admin':
+                            self.save_student()
                         print("退出系统\n")
                         break
                 case _:
