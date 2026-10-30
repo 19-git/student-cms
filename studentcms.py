@@ -5,6 +5,7 @@
 #导包
 import os
 import json
+import datetime
 from openpyxl import Workbook, load_workbook
 from student import Student
 
@@ -22,6 +23,12 @@ class StudentCMS(object):
                 return value
             print(error_msg)
 
+    #写日志：把一条记录追加到 operation.log（时间 | 操作 | 谁 | 详情）
+    def write_log(self, content):
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open('./operation.log', 'a', encoding='utf-8') as f:
+            f.write(f"{now} | {content}\n")
+
     #登录方法：选择角色（管理员需密码，普通老师直接进入）
     def login(self):
         print('*'*23)
@@ -35,11 +42,14 @@ class StudentCMS(object):
                 password = input('请输入管理员密码：')
                 if password == '123456':
                     self.role = 'admin'
+                    self.write_log("登录 | 管理员 | 成功")
                     print('管理员登录成功~\n')
                     break
+                self.write_log("登录 | 管理员 | 密码错误")
                 print('密码错误，请重新输入！')
             elif choice == '2':
                 self.role = 'teacher'
+                self.write_log("登录 | 普通老师 | 成功")
                 print('普通老师登录成功~\n')
                 break
             else:
@@ -82,6 +92,7 @@ class StudentCMS(object):
         stu = Student(name, gender, age, phone, desc)
         #添加到学生列表中
         self.stu_list.append(stu)
+        self.write_log(f"添加学生 | 管理员 | 添加姓名：{name}")
         print(f"已添加{name}学生信息~")
 
     def del_student(self):
@@ -94,6 +105,7 @@ class StudentCMS(object):
             for stu in self.stu_list:          #for...else,只有for循环没有被break打断,完整遍历结束时,才会执行else里的代码
                 if stu.name == del_name:
                     self.stu_list.remove(stu)
+                    self.write_log(f"删除学生 | 管理员 | 删除姓名：{del_name}")
                     print(f"已删除{del_name}学生信息~")
                     break
             else:  # 走到这 说明未找到要删除的学生姓名
@@ -115,9 +127,12 @@ class StudentCMS(object):
                     stu.gender = self.input_check('请录入修改后的性别：', lambda s: s in ["男", "女"], '性别只能输入男或女，请重新输入！')
                     stu.phone = self.input_check('请录入修改后的电话：', lambda s: s.isdigit() and len(s) == 11, '电话必须是 11 位数字，请重新输入！')
                     stu.desc = input('请录入修改后的描述信息：')
+                    self.write_log(f"修改学生 | 管理员 | 修改姓名：{up_name}")
                     break
             else:  # 走到这 说明未找到要修改的学生姓名
                 print("未找到该学生，请从新输入！")
+                continue
+            break
 
     def search_one_student(self):
         while True:

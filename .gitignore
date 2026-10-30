@@ -18,3 +18,6 @@ env/
 # 排除运行时生成的 Excel 导出文件与 Office 临时锁文件
 students.xlsx
 ~$*.xlsx
+
+# 排除运行日志（含操作记录，本地保留，不进仓库）
+operation.log
