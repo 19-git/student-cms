@@ -21,3 +21,6 @@ students.xlsx
 
 # 排除运行日志（含操作记录，本地保留，不进仓库）
 operation.log
+
+# 排除学生数据文件（本地保留，不进仓库）
+stu_data.txt
